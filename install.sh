@@ -275,6 +275,7 @@ list)
   echo "in use: ${LAYERS[*]:-(core only)}"
   ;;
 install)
+  mkdir -p "$CLAUDE_DIR"   # a brand-new machine has no ~/.claude yet
   migrate_manifest
   resolve_layers
   : > "$MANIFEST.new"

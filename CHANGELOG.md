@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format follows
 [Semantic Versioning](https://semver.org/). `VERSION`, `.claude-plugin/plugin.json` and
 `.claude-plugin/marketplace.json` always carry the same number.
 
+## [Unreleased]
+
+### Fixed
+
+- `install.sh` creates the Claude config directory when it does not exist, so the first install on a new
+  machine no longer fails.
+
 ## [1.0.0] - 2026-11-03
 
 ### Added
