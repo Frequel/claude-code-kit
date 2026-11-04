@@ -1,0 +1,9 @@
+# Nothing in this repo is generated; keep it that way.
+*.bak
+*.tmp
+
+# Layers are personal or team specific: each one is its own git repository.
+# Only the documented sample is part of the shared kit.
+layers/*
+!layers/example/
+__pycache__/

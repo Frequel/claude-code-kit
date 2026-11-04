@@ -1,0 +1,8 @@
+{
+  "name": "claude-code-kit",
+  "description": "A generic Claude Code configuration kit: stack-aware commands, skills, subagents, quality hooks and per-stack CLAUDE.md templates, specialised through swappable layers.",
+  "version": "1.0.0",
+  "author": {
+    "name": "claude-code-kit contributors"
+  }
+}

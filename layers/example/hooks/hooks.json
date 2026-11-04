@@ -1,0 +1,4 @@
+{
+  "description": "Hooks of the example layer. Empty on purpose: add events here, and put the scripts in hooks/scripts/. Commands must start with: bash \"${CLAUDE_PLUGIN_ROOT}/layers/<name>/hooks/scripts/<script>.sh\"",
+  "hooks": {}
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-code-kit",
+  "description": "Local marketplace hosting the claude-code-kit configuration",
+  "owner": {
+    "name": "claude-code-kit contributors"
+  },
+  "plugins": [
+    {
+      "name": "claude-code-kit",
+      "description": "A generic Claude Code configuration kit: stack-aware commands, skills, subagents, quality hooks and per-stack CLAUDE.md templates, specialised through swappable layers.",
+      "category": "workflow",
+      "source": "./",
+      "version": "1.0.0"
+    }
+  ]
+}

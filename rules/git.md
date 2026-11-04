@@ -1,0 +1,9 @@
+# Git and branching
+
+- **Never commit or push on your own initiative.** Creating a branch is allowed; `git commit`, `git push`, tags, merges and rebases happen only when the user asks for that specific change, each time. This applies to subagents too: tell them not to commit. When work is ready, stop and say what you would commit and where.
+- **Never make a second copy of a repository** unless the user asks: no `git worktree add`, no extra clone, no "isolation: worktree" for agents. Work in the user's checkout. If it is on the wrong branch or holds uncommitted changes, ask what to do with them before switching; the usual answer is to carry them onto the new branch together with your changes.
+- Work on `feature/*`, `bugfix/*` or `hotfix/*`. **Never commit to `master`, `main` or `develop`.** A hook can block it; if the hook is missing, the rule still stands.
+- **A new branch never tracks the branch it was cut from.** Branching from `origin/<base>` makes git set `<base>` as the upstream, and then `git push` fails (`push.default=simple` refuses a different name) or, worse, would target a protected branch. Create branches with `git switch -c <name> --no-track origin/<base>` (same for `git checkout -b`), and publish with `git push -u origin HEAD`. If a branch already tracks the wrong one, run `git branch --unset-upstream` first. Git configuration differs between hosts and containers, so do not rely on `branch.autoSetupMerge` or `push.autoSetupRemote` being set.
+- **Commit style is per repo, and the repo wins.** Read `git log --oneline -n 10` before writing a message and mirror what is there (Conventional Commits, bracketed tags, or whatever the history shows).
+- Run the repo's checks before proposing a commit. Commit per logical unit, not per file.
+- Keep pull requests small and single-purpose; squash on merge.

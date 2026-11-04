@@ -1,0 +1,5 @@
+{
+  "name": "example",
+  "description": "A minimal, working sample layer. Copy this folder to layers/<your-name>/ and edit it.",
+  "requires": []
+}
