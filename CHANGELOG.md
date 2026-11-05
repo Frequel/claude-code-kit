@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
 ### Added
 
 - `guard-allow-remotes`: per-config or per-layer URL patterns that exempt matching repositories from the
@@ -16,6 +17,7 @@ All notable changes to this project are documented here. The format follows
 
 - `install.sh` creates the Claude config directory when it does not exist, so the first install on a new
   machine no longer fails.
+- `CLAUDE.md` is tracked again; it had been dropped from the clean copy by a global git ignore.
 
 ## [1.0.0] - 2026-11-03
 
