@@ -12,6 +12,7 @@ core.
 layers/<name>/
   layer.json          {"name", "description", "requires": []}
   protected-paths     optional: extra folders protect-config must never delete or move
+  guard-allow-remotes optional: remote URL patterns whose repos may commit/push on protected branches
   rules/*.md          standing rules (always-on, or path-scoped through `paths:` frontmatter)
   commands/*.md       slash commands
   agents/*.md         subagents (declare `model:` in the frontmatter)
@@ -48,6 +49,13 @@ path and exit 0 unless they mean to block. A `Stop` hook must never exit 2.
 refuses commands that delete or move any listed folder, as long as the layer is in use. Use it for
 data that exists nowhere else (a notes folder, a private checkout). A file with the same name in the
 config directory (`~/.claude/protected-paths`) applies to every session.
+
+**`guard-allow-remotes`.** One `fnmatch` pattern per line, `#` starts a comment, matched against the URL of
+the remote the push targets (`origin` when none is named) and against the same URL without `.git`, for example
+`git@github.com:Me/my-notes*`. A repository that matches may take commits and pushes on `main`, `master` and
+`develop`. Force pushes, `--mirror` and `--all` stay refused for it. It is an explicit consent: list only
+repositories you own and are happy to let Claude publish to. Without the file nothing changes. A file with
+the same name in the config directory applies to every session.
 
 **Keep layers private.** Layers are installed per machine; do not put
 secrets, hostnames or account ids in them if there is any chance they will be shared.

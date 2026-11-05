@@ -84,7 +84,9 @@ All hooks are silent on the happy path and exit 0 unless they mean to block.
   is installed; missing tools are skipped silently.
 - **guard** (PreToolUse on Bash): refuses `git commit` and `git push` on `master`, `main` or
   `develop` of the repository the command **actually acts on** (it follows `cd` and `git -C`), and
-  refuses force pushes (`-f`, `--force`, `+refspec`). `--force-with-lease` is allowed.
+  refuses force pushes (`-f`, `--force`, `+refspec`). `--force-with-lease` is allowed. A repository
+  whose remote URL matches a pattern in a `guard-allow-remotes` file (config directory or a layer in
+  use) is exempt from the protected-branch rule only; force, `--mirror` and `--all` stay refused.
 - **protect-config** (PreToolUse on Bash and edits): refuses deleting or moving the Claude config
   directory's `commands`, `rules`, `agents`, `skills`, `hooks`, `settings`, manifests, `plugins` and
   memories; the kit root, its top-level folders, its layer folders and `.git`; and any folder listed

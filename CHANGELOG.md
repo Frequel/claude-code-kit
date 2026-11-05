@@ -7,6 +7,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `guard-allow-remotes`: per-config or per-layer URL patterns that exempt matching repositories from the
+  protected-branch rule of the guard hook. Force pushes, `--mirror` and `--all` stay refused.
+
 ### Fixed
 
 - `install.sh` creates the Claude config directory when it does not exist, so the first install on a new

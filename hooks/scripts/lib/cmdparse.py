@@ -675,6 +675,66 @@ def upstream_short(repo, extra, branch):
     return out.split("/", 1)[1] if "/" in out else ""
 
 
+def kit_root():
+    """Root of the kit this script belongs to (tests may override it with CLAUDE_KIT_ROOT)."""
+    env = os.environ.get("CLAUDE_KIT_ROOT")
+    if env:
+        return env
+    here = os.path.realpath(__file__)
+    for _ in range(4):
+        here = os.path.dirname(here)
+    return here
+
+
+def allow_remote_patterns():
+    """Remote URL patterns whose repositories may take commits and pushes on protected branches.
+
+    One pattern per line (fnmatch syntax, `#` starts a comment), read from `guard-allow-remotes` in the
+    Claude config dir and in every layer in use. With no such file nothing is allowed, which is the
+    default. Force pushes and --mirror/--all stay refused for these repositories too.
+    """
+    cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(home(), ".claude")
+    files = [os.path.join(cfg, "guard-allow-remotes")]
+    try:
+        with open(os.path.join(cfg, ".claude-kit-layers"), encoding="utf-8") as fh:
+            for name in fh.read().split():
+                if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name):
+                    files.append(os.path.join(kit_root(), "layers", name, "guard-allow-remotes"))
+    except OSError:
+        pass
+    out = []
+    for path in files:
+        try:
+            with open(path, encoding="utf-8") as fh:
+                lines = fh.read().splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            line = line.split("#", 1)[0].strip()
+            if line:
+                out.append(line)
+    return out
+
+
+def remote_allowed(repo, extra, remote):
+    """True when `remote` of `repo` (a remote name or a URL) matches an allow pattern."""
+    patterns = allow_remote_patterns()
+    if not patterns or not repo or not os.path.isdir(repo):
+        return False
+    if re.search(r"[:/@]", remote):                       # `git push <url> ...`
+        url = remote
+    else:
+        try:
+            r = subprocess.run(["git"] + extra + ["remote", "get-url", remote], cwd=repo,
+                               capture_output=True, text=True, timeout=5)
+        except Exception:
+            return False
+        url = r.stdout.strip() if r.returncode == 0 else ""
+    if not url:
+        return False
+    return any(fnmatch.fnmatchcase(c, pat) for pat in patterns for c in (url, re.sub(r"\.git$", "", url)))
+
+
 def git_env_extra(repo, variables, assigns):
     """--git-dir / --work-tree options equivalent to GIT_DIR / GIT_WORK_TREE in force for a command."""
     out = []
@@ -698,6 +758,7 @@ def judge(sub, rest, repo, extra, ecwd, variables, ctx, root, shown):
     lookup = root if unresolved else repo
     refspecs = []
     opts = []
+    pos = []
     if sub == "push":
         opts, pos = push_parts(rest)
         refspecs = [expand_str(r, variables) or r for r in pos[1:]]
@@ -707,6 +768,9 @@ def judge(sub, rest, repo, extra, ecwd, variables, ctx, root, shown):
                 or any(r.startswith("+") for r in refspecs):
             return FORCE_MSG
     git_extra = [] if unresolved else extra
+    # Repositories whose remote is on the allow list may take commits and pushes on protected branches.
+    if remote_allowed(lookup, git_extra, (pos[0] if sub == "push" and pos else "origin")):
+        return None
     branch = ctx["branches"].get(lookup)
     if branch is None:
         branch = current_branch(lookup, git_extra)

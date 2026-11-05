@@ -55,6 +55,16 @@ git -C "$UP" branch -q -u origin/develop
 git -C "$UP" branch -q feature/own
 git -C "$UP" branch -q -u origin/feature/u feature/own
 
+# Consent: repositories whose remote matches a guard-allow-remotes pattern may use protected branches.
+printf '%s\n' '# personal repositories' 'git@github.com:Me/allowed-*' > "$KIT/layers/mine/guard-allow-remotes"
+printf '%s\n' 'https://example.invalid/team/shared.git' > "$CFG/guard-allow-remotes"
+ALLOWED="$T/allowed-repo"; git_init "$ALLOWED" main
+git -C "$ALLOWED" remote add origin git@github.com:Me/allowed-kit.git
+ALLOWED2="$T/allowed-repo2"; git_init "$ALLOWED2" master
+git -C "$ALLOWED2" remote add origin https://example.invalid/team/shared.git
+OTHER="$T/other-remote-repo"; git_init "$OTHER" main
+git -C "$OTHER" remote add origin git@github.com:Me/not-listed.git
+
 pass=0
 fail=0
 
@@ -286,6 +296,17 @@ t_file "Write a plugin file (reminder)"         reminder Write "$CFG/plugins/p/x
 t_file "Write a hook (reminder)"                reminder Write "$CFG/hooks/h.sh"
 t_file "Edit via another home's .claude"        reminder Edit "/home/other/.claude/rules/x.md"
 t_file "Edit a config file by relative path"    allow Edit "cache/x.json"
+
+t_guard "allowed remote: commit on main"        allow "$ALLOWED" "git commit -m x"
+t_guard "allowed remote: push origin main"      allow "$ALLOWED" "git push origin main"
+t_guard "allowed remote (config file): push"    allow "$ALLOWED2" "git push origin master"
+t_guard "allowed remote: force push stays denied" deny "$ALLOWED" "git push --force origin main"
+t_guard "allowed remote: +refspec stays denied" deny  "$ALLOWED" "git push origin +main"
+t_guard "allowed remote: --mirror stays denied" deny  "$ALLOWED" "git push --mirror"
+t_guard "allowed remote: git -C from elsewhere" allow "$MASTER" "git -C $ALLOWED push origin main"
+t_guard "unlisted remote: commit on main"       deny  "$OTHER" "git commit -m x"
+t_guard "unlisted remote: push to main"         deny  "$OTHER" "git push origin main"
+t_guard "no remote at all: commit on master"    deny  "$MASTER" "git commit -m x"
 
 echo
 echo "hooks.sh: $pass passed, $fail failed"
