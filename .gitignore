@@ -7,3 +7,6 @@
 layers/*
 !layers/example/
 __pycache__/
+
+# Tracked on purpose: some users ignore CLAUDE.md globally.
+!CLAUDE.md
