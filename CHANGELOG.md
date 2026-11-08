@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 ### Added
 
+- The guard hook refuses `tokensave doctor|install|reinstall|upgrade` and `rtk init -g`, which rewrite the
+  configuration shared with the dev containers with host-only paths. It follows `cd`, `bash -c`, `env`, `sudo`
+  and `rtk` (also `rtk proxy`); the per-project forms stay allowed. 26 cases in `tests/hooks.sh`.
+
 - `doctor.sh` "resilience" section: the newest configuration backup in each backup location must be recent
   (`DOCTOR_BACKUP_MAX_DAYS`, default 7), `settings.json` must carry no duplicated hook entries, the always-on
   rules must stay inside a size budget (`DOCTOR_RULES_BUDGET`, default 24 KB), and the kit, its layers and every

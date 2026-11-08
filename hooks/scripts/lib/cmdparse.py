@@ -793,12 +793,52 @@ def judge(sub, rest, repo, extra, ecwd, variables, ctx, root, shown):
     return None
 
 
+# Self-repair commands of third-party tools. They rewrite the configuration shared with the dev
+# containers (settings.json, ~/.claude.json) with host-only absolute paths, or append broken entries to
+# it, and the damage shows up much later and somewhere else.
+SELF_REPAIR_VERBS = {"tokensave": {"doctor", "install", "reinstall", "upgrade"}}
+SELF_REPAIR_MSG = ("Blocked by the kit guard hook: `{what}` rewrites the Claude Code configuration shared "
+                   "with the dev containers (hooks and MCP servers get host-only absolute paths), which "
+                   "breaks the tool inside the containers. Do not run it. If it is really needed, take a "
+                   "snapshot (scripts/backup-config.sh) and ask the user to run it themselves with `! <command>`.")
+SELF_REPAIR_ANYWHERE = re.compile(r"\btokensave\b.*\b(doctor|install|reinstall|upgrade)\b"
+                                  r"|\brtk\b.*\binit\b.*(\s-[A-Za-z]*g\b|--global)", re.S)
+
+
+def self_repair_reason(cmd, args, words=()):
+    """Deny reason when the command is a third-party tool's self-repair, else None. `words` are the
+    original words of the segment: the parser treats rtk as a transparent wrapper, so `rtk init -g`
+    reaches `cmd` as plain `init`."""
+    for i, w in enumerate(words):
+        if os.path.basename(w) == "rtk":
+            rest = list(words[i + 1:])
+            if rest and rest[0] == "proxy":
+                rest = rest[1:]
+            if rest and rest[0] == "init" and any(a == "--global" or re.match(r"^-[A-Za-z]*g[A-Za-z]*$", a)
+                                                  for a in rest[1:]):
+                return SELF_REPAIR_MSG.format(what="rtk init -g")
+            if rest and os.path.basename(rest[0]) in SELF_REPAIR_VERBS:
+                return self_repair_reason(rest[0], rest[1:])
+            break
+    base = os.path.basename(cmd)
+    verbs = SELF_REPAIR_VERBS.get(base)
+    if verbs:
+        sub = next((a for a in args if not a.startswith("-")), None)
+        if sub in verbs:
+            return SELF_REPAIR_MSG.format(what=base + " " + sub)
+    return None
+
+
 def guard(command, cwd):
     """Reason to deny, or None."""
     root = cwd or os.getcwd()
     if os.environ.get("CMDPARSE_TEST_RAISE"):          # test hook: simulates a parser crash
         raise RuntimeError("forced")
     for ev in collect(command, root):
+        if ev[0] == "cmd":
+            r = self_repair_reason(ev[1], ev[2], ev[5])
+            if r:
+                return r
         if ev[0] == "pystr":
             m = PY_GIT.search(ev[1])
             if m:
@@ -1158,6 +1198,10 @@ def main(argv):
                     if re.search(r"\bgit\b.*\b(commit|push)\b", cmd, re.S):
                         reason = ("Could not parse the command, so the protected-branch check could not "
                                   "run. Run git commit/push without chaining, or ask the user.")
+                    elif SELF_REPAIR_ANYWHERE.search(cmd):
+                        reason = ("Could not parse the command, so the check for tool self-repair "
+                                  "(tokensave doctor/install/reinstall/upgrade, rtk init -g) could not run. "
+                                  "Do not run those; ask the user.")
                 if reason:
                     print(deny_json(reason))
         elif mode == "protect":

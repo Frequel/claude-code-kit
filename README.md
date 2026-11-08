@@ -87,6 +87,10 @@ All hooks are silent on the happy path and exit 0 unless they mean to block.
   refuses force pushes (`-f`, `--force`, `+refspec`). `--force-with-lease` is allowed. A repository
   whose remote URL matches a pattern in a `guard-allow-remotes` file (config directory or a layer in
   use) is exempt from the protected-branch rule only; force, `--mirror` and `--all` stay refused.
+  It also refuses the self-repair commands of third-party tools that rewrite the configuration shared
+  with the dev containers: `tokensave doctor|install|reinstall|upgrade` and `rtk init -g` (the
+  per-project forms `tokensave init`, `tokensave sync` and `rtk init` stay allowed). The reason tells
+  Claude to ask the user to run it themselves with `! <command>` after a snapshot.
 - **protect-config** (PreToolUse on Bash and edits): refuses deleting or moving the Claude config
   directory's `commands`, `rules`, `agents`, `skills`, `hooks`, `settings`, manifests, `plugins` and
   memories; the kit root, its top-level folders, its layer folders and `.git`; and any folder listed

@@ -4,8 +4,10 @@
 # allowed). The command is parsed, not grepped: text inside quotes, heredocs and echo arguments is
 # ignored, and the branch checked is the one of the repository the command acts on (after `cd` and
 # `git -C`), not of the session directory. Deny is returned as JSON so the reason reaches Claude;
-# everything else passes through silently. A missing python3 allows; a parser crash on a command that
-# mentions `git commit|push` denies (fail closed, the only hook that does).
+# everything else passes through silently. It also refuses the self-repair commands of third-party
+# tools that rewrite the shared configuration (tokensave doctor|install|reinstall|upgrade, rtk init -g).
+# A missing python3 allows; a parser crash on a command that mentions `git commit|push` or one of those
+# self-repair commands denies (fail closed, the only hook that does).
 set -uo pipefail
 
 command -v python3 >/dev/null 2>&1 || exit 0
