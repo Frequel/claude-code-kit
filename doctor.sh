@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Health check for the whole Claude Code setup: the kit, the user config, the MCP servers,
-# and every repository's CLAUDE.md. Read-only. Exit 1 if anything is broken.
+# and every repository's CLAUDE.md. Read-only, apart from a `git fetch` in the repositories it compares
+# with their remote (DOCTOR_OFFLINE=1 skips it). Exit 1 if anything is broken.
 set -uo pipefail
 
 KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -99,6 +100,107 @@ for f in "$KIT_ROOT"/commands/*.md "$KIT_ROOT"/agents/*.md; do
   done < <(find "$PROJECTS" -path "*/.claude/*/$name" 2>/dev/null)
 done
 [ "$dupes" -eq 0 ] && good "no exact copies of kit files in repositories" || bad "$dupes exact cop(ies) of kit files in repositories"
+
+echo "== resilience =="
+# Every one of these is a failure that actually happened: a configuration deleted with its only backup,
+# a vendor tool appending the same hook over a thousand times, a repository that had diverged from its
+# remote without anyone noticing, and always-on rules growing until they crowd out the work.
+backup_script="$KIT_ROOT/scripts/backup-config.sh"
+max_days="${DOCTOR_BACKUP_MAX_DAYS:-7}"
+mapfile -t backup_dests < <(bash "$backup_script" --list-destinations 2>/dev/null || true)
+if [ "${#backup_dests[@]}" -eq 0 ]; then
+  bad "no backup destination: scripts/backup-config.sh is missing or lists none"
+else
+  for d in "${backup_dests[@]}"; do
+    [ -n "$d" ] || continue
+    newest=$(find "$d" -maxdepth 1 -name 'claude-config-*.tar.gz' -printf '%T@\n' 2>/dev/null | sort -rn | head -1)
+    if [ -z "$newest" ]; then
+      bad "no configuration backup in ${d/#$HOME/\~} — run scripts/backup-config.sh"
+    else
+      age=$(( ( $(date +%s) - ${newest%.*} ) / 86400 ))
+      [ "$age" -le "$max_days" ] && good "configuration backup in ${d/#$HOME/\~} is $age day(s) old" \
+        || bad "newest configuration backup in ${d/#$HOME/\~} is $age days old (limit $max_days) — run scripts/backup-config.sh"
+    fi
+  done
+  [ "${#backup_dests[@]}" -ge 2 ] || note "only one backup location here; the host keeps a second one on another disk"
+fi
+
+dupes=$(python3 - "$CLAUDE_DIR/settings.json" <<'PY' 2>/dev/null
+import json, sys
+try:
+    hooks = json.load(open(sys.argv[1])).get("hooks", {})
+except (OSError, ValueError, AttributeError):
+    sys.exit(0)
+for event, entries in hooks.items():
+    seen = {}
+    for entry in entries:
+        key = json.dumps(entry, sort_keys=True)
+        seen[key] = seen.get(key, 0) + 1
+    extra = sum(n - 1 for n in seen.values() if n > 1)
+    if extra:
+        print(f"{event}: {extra} duplicate hook entr{'y' if extra == 1 else 'ies'}")
+PY
+)
+if [ -z "$dupes" ]; then
+  good "no duplicated hook entries in settings.json"
+else
+  bad "settings.json carries duplicated hook entries (a tool appended them again): restore from a backup, then remove the repeats"
+  printf '%s\n' "$dupes" | while IFS= read -r l; do note "$l"; done
+fi
+
+budget="${DOCTOR_RULES_BUDGET:-24576}"
+always_on=0
+for f in "$CLAUDE_DIR"/rules/*.md; do
+  [ -f "$f" ] || continue
+  awk 'NR<=5 && /^paths:/ {found=1} END {exit !found}' "$f" && continue   # loaded only for matching files
+  always_on=$(( always_on + $(wc -c < "$f") ))
+done
+[ "$always_on" -le "$budget" ] && good "always-on rules: $((always_on/1024)) KB of a $((budget/1024)) KB budget (about $((always_on/4)) tokens a session)" \
+  || bad "always-on rules are $((always_on/1024)) KB, over the $((budget/1024)) KB budget: scope some with a paths: header, or move detail into a skill"
+
+# Repositories that hold data nowhere else: the kit, its layers and every protected path that is a git repo.
+sync_repos=()
+add_repo() {
+  local p
+  p=$(cd "$1" 2>/dev/null && pwd -P) || return 0
+  [ -e "$p/.git" ] || return 0
+  local x
+  for x in ${sync_repos[@]+"${sync_repos[@]}"}; do [ "$x" = "$p" ] && return 0; done
+  sync_repos+=("$p")
+}
+add_repo "$KIT_ROOT"
+for l in "$KIT_ROOT"/layers/*/; do [ -d "$l" ] && add_repo "$l"; done
+for pf in "$CLAUDE_DIR/protected-paths" "$KIT_ROOT"/layers/*/protected-paths; do
+  [ -f "$pf" ] || continue
+  while IFS= read -r line; do
+    line=${line%%#*}
+    line=$(printf '%s' "$line" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    [ -n "$line" ] && add_repo "${line/#\~/$HOME}"
+  done < "$pf"
+done
+for r in ${sync_repos[@]+"${sync_repos[@]}"}; do
+  rname=${r/#$HOME/\~}
+  if [ -z "$(git -C "$r" remote 2>/dev/null)" ]; then
+    note "$rname: no remote, so the backups are the only copy"
+    continue
+  fi
+  if [ -z "${DOCTOR_OFFLINE:-}" ]; then
+    GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o BatchMode=yes -o ConnectTimeout=8" \
+      timeout 20 git -C "$r" fetch -q </dev/null >/dev/null 2>&1 \
+      || note "$rname: remote not reachable, comparing with the last fetch"
+  fi
+  up=$(git -C "$r" rev-parse --abbrev-ref '@{upstream}' 2>/dev/null) || { note "$rname: this branch has no upstream"; continue; }
+  read -r ahead behind < <(git -C "$r" rev-list --left-right --count "HEAD...$up" 2>/dev/null || echo "0 0")
+  if [ "$ahead" -gt 0 ] && [ "$behind" -gt 0 ]; then
+    bad "$rname has diverged from $up ($ahead ahead, $behind behind): pull --rebase, then push"
+  elif [ "$ahead" -gt 0 ]; then
+    note "$rname: $ahead commit(s) not pushed to $up"
+  elif [ "$behind" -gt 0 ]; then
+    note "$rname: $behind commit(s) to pull from $up"
+  else
+    good "$rname is in step with $up"
+  fi
+done
 
 echo "== MCP servers =="
 if command -v claude >/dev/null 2>&1; then

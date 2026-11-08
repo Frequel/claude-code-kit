@@ -16,6 +16,7 @@ This repo configures the tool; it ships no application code.
 
 ```bash
 bash tests/hooks.sh           # hook test suite (must stay green)
+bash tests/doctor.sh          # doctor.sh against throw-away worlds, no network (must stay green)
 ./install.sh --check          # is the kit installed, drifted, or missing anything
 ./install.sh --user           # (re)install into ~/.claude — symlinks by default
 ./install.sh --layers a,b     # install the core plus these layers (remembered)
@@ -69,6 +70,10 @@ echo '{"cwd":"/path/to/a/repo"}' | bash hooks/scripts/orient.sh
   layer in use) may use protected branches; force, `--mirror` and `--all` stay refused. Never add a
   pattern without the owner asking for it.
 - **Keep `tests/hooks.sh` green.** Every behaviour change in a hook needs a test case.
+- **Keep `tests/doctor.sh` green.** Every new check in `doctor.sh` needs a case there: it builds a fake kit,
+  home and remote, so it never reads the real configuration or the network.
+- **`rules/tokensave.md` is written by tokensave, not by the kit.** Never edit it; precedence over the kit's
+  own rules is stated in `rules/exploration.md`.
 - **`install.sh` owns only what is in `~/.claude/.claude-kit-manifest`.** Never make it delete or
   overwrite a path that is not listed there — a personal file with the same name must win. The
   manifest is migrated from the legacy name on install.

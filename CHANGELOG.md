@@ -8,6 +8,17 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 ### Added
 
+- `doctor.sh` "resilience" section: the newest configuration backup in each backup location must be recent
+  (`DOCTOR_BACKUP_MAX_DAYS`, default 7), `settings.json` must carry no duplicated hook entries, the always-on
+  rules must stay inside a size budget (`DOCTOR_RULES_BUDGET`, default 24 KB), and the kit, its layers and every
+  protected path that is a git repository are compared with their remote (a diverged one is a problem;
+  `DOCTOR_OFFLINE=1` skips the fetch).
+- `scripts/backup-config.sh --list-destinations`, so `doctor.sh` reads the same locations the backup writes to.
+- `tests/doctor.sh`: 25 cases for `doctor.sh` in throw-away worlds, including one that fails on the old
+  command-substitution capture of `claude mcp list`.
+- `rules/exploration.md` states the precedence of the tokensave-written `rules/tokensave.md` over the kit's
+  rules for code exploration in an indexed repository; `rules/delegation.md` points to it.
+
 - `doctor.sh` fails when `settings.json` or `~/.claude.json` names `tokensave` or `rtk` by absolute path in a
   hook or an MCP server. The configuration is shared with the dev containers, where the home directory and the
   binary location differ, so only bare names resolve on both sides. `tokensave doctor` writes absolute paths.

@@ -9,7 +9,8 @@
 #   /mnt/c/Users/<windows user>/claude-config-backups — another disk, outside OneDrive (WSL host only)
 # A backup kept only inside a container is lost on rebuild: that is how the 2026-09-30 one vanished.
 #
-# usage: backup-config.sh [--if-older-than <minutes>] [--quiet]
+# usage: backup-config.sh [--if-older-than <minutes>] [--quiet] [--list-destinations]
+#   --list-destinations  print where snapshots go, one per line, and exit (doctor.sh reads them)
 set -euo pipefail
 
 KIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,12 +18,14 @@ CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 KEEP=30
 MIN_AGE=0
 QUIET=0
+LIST_ONLY=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --if-older-than) MIN_AGE="$2"; shift 2 ;;
     --quiet) QUIET=1; shift ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    --list-destinations) LIST_ONLY=1; shift ;;
+    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -44,6 +47,8 @@ destinations() {
   [ -n "$users" ] && [ "$(wc -l <<< "$users")" -eq 1 ] && echo "$users/claude-config-backups"
   return 0
 }
+
+if [ "$LIST_ONLY" -eq 1 ]; then destinations; exit 0; fi
 
 mapfile -t dests < <(destinations)
 primary="${dests[0]}"
