@@ -26,7 +26,9 @@ produces exactly this on request.
   (two services, implementation and its tests, the same change in several repositories). Launch them
   **in one message** so they run at the same time.
 - **Sweep:** the answer needs reading many files or repositories and only the conclusion matters. A
-  read-only agent keeps the file dumps out of this context (`/fanout`, `Explore`).
+  read-only agent keeps the file dumps out of this context (`/fanout`, `Explore`). In a repository with a
+  tokensave index, code research goes through tokensave instead, unless the user asks for the agent
+  (`exploration.md`, "Precedence").
 - **Mechanical bulk:** repetitive edits, renames, reformatting, link fixing, worklog writing. A Haiku
   agent does it for a fraction of the cost.
 - **Specified implementation:** the plan is precise (files, behaviour, done-when). The stack's
@@ -53,7 +55,7 @@ bigger than the brief it needs.
 - Implementation and exploration agents: Sonnet (the default for subagents that declare no model).
 - Mechanical agents: Haiku (`gate-runner`, worklog or note-writing agents, bulk edits). Pass `model` explicitly when
   the agent definition does not declare the one the job needs.
-- Plain "where is X" searches: `Explore` with `model: haiku`. Keep Sonnet for any agent that has to reason across services or repositories.
+- Plain "where is X" searches, in a repository without a tokensave index: `Explore` with `model: haiku`. Keep Sonnet for any agent that has to reason across services or repositories.
 - Mechanical commands already run on Haiku through their frontmatter (`/check`, `/commit-msg`,
   `/kit-doctor`).
 
