@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format follows
 `.claude-plugin/marketplace.json` always carry the same number.
 
 ## [Unreleased]
+### Fixed
+
+- `doctor.sh` no longer captures `claude mcp list` through a command substitution. The output goes to a
+  temporary file, stdin is `/dev/null` and the timeout sends SIGKILL, so a child process that keeps the
+  pipe open cannot hang the MCP check.
 
 ## [1.1.0] - 2026-11-05
 ### Added

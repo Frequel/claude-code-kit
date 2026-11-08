@@ -64,7 +64,13 @@ done
 
 echo "== MCP servers =="
 if command -v claude >/dev/null 2>&1; then
-  mcp=$(timeout 60 claude mcp list 2>&1)
+  # Write to a file, not into $(...): a command substitution waits for EOF on the pipe, so any
+  # child of `claude mcp list` that inherits it (an MCP server) would hang doctor.sh until it exits.
+  # SIGKILL on timeout, and no stdin, so the check can neither wait for input nor ignore the limit.
+  mcp_out=$(mktemp)
+  timeout -s KILL 60 claude mcp list </dev/null >"$mcp_out" 2>&1 || true
+  mcp=$(cat "$mcp_out")
+  rm -f "$mcp_out"
   # tokensave refuses to start when the working directory is not an indexed project, so the
   # health check fails purely because of where doctor.sh was launched from. Re-check it from a
   # directory that IS indexed before believing the failure — a check that cries wolf stops
