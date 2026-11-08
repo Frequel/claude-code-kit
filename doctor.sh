@@ -49,6 +49,44 @@ lines=$(wc -l < "$CLAUDE_DIR/CLAUDE.md" 2>/dev/null || echo 0)
 [ -d "$CLAUDE_DIR/rules" ] && good "rules/ present ($(ls "$CLAUDE_DIR"/rules/*.md 2>/dev/null | wc -l) files)" || bad "no ~/.claude/rules/"
 python3 -c "import json;json.load(open('$CLAUDE_DIR/settings.json'))" 2>/dev/null \
   && good "settings.json is valid JSON" || bad "settings.json is not valid JSON"
+# ~/.claude and ~/.claude.json are shared with the dev containers, where the home directory and the
+# binary location differ. A hook or MCP server that names tokensave or rtk by absolute path works on
+# one side only — `tokensave doctor` writes exactly that. Bare names let PATH resolve them on each side.
+abs_tools=$(python3 - "$CLAUDE_DIR/settings.json" "$HOME/.claude.json" <<'PY' 2>/dev/null
+import json, re, sys
+
+def tokens(text):
+    return [t.strip("\"'") for t in re.split(r"\s+", text or "")]
+
+def absolute_tool(token):
+    return token.startswith("/") and re.search(r"/(tokensave|rtk)$", token) is not None
+
+found = []
+try:
+    settings = json.load(open(sys.argv[1]))
+    for event, entries in settings.get("hooks", {}).items():
+        for entry in entries:
+            for hook in entry.get("hooks", []):
+                found += [f"{event} hook: {t}" for t in tokens(hook.get("command")) if absolute_tool(t)]
+except (OSError, ValueError, AttributeError):
+    pass
+try:
+    servers = json.load(open(sys.argv[2])).get("mcpServers", {})
+    for name, cfg in servers.items():
+        parts = [cfg.get("command")] + list(cfg.get("args", []))
+        found += [f"MCP server {name}: {t}" for p in parts for t in tokens(p) if absolute_tool(t)]
+except (OSError, ValueError, AttributeError):
+    pass
+print("\n".join(found))
+PY
+)
+if [ -z "$abs_tools" ]; then
+  good "tokensave and rtk are registered by bare name (valid on the host and in the dev containers)"
+else
+  bad "tokensave/rtk registered by absolute path, which does not exist in the dev containers (did 'tokensave doctor' run?)"
+  printf '%s\n' "$abs_tools" | while IFS= read -r l; do note "$l"; done
+  note "fix: restore the bare names from a backup (scripts/backup-config.sh snapshots), or re-run the settings merge from the setup guide"
+fi
 junk=$(find "$CLAUDE_DIR" "$PROJECTS" -name '*:Zone.Identifier' 2>/dev/null | wc -l)
 [ "$junk" -eq 0 ] && good "no Zone.Identifier junk" || bad "$junk Zone.Identifier file(s)"
 

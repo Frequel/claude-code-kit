@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 `.claude-plugin/marketplace.json` always carry the same number.
 
 ## [Unreleased]
+### Added
+
+- `doctor.sh` fails when `settings.json` or `~/.claude.json` names `tokensave` or `rtk` by absolute path in a
+  hook or an MCP server. The configuration is shared with the dev containers, where the home directory and the
+  binary location differ, so only bare names resolve on both sides. `tokensave doctor` writes absolute paths.
+
 ### Fixed
 
 - `doctor.sh` no longer captures `claude mcp list` through a command substitution. The output goes to a
