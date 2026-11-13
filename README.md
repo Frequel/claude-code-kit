@@ -41,6 +41,7 @@ machine. Restart Claude Code, then run `/kit-doctor`.
 The installer owns only what is listed in the manifest `~/.claude/.claude-kit-manifest`. A file of
 yours with the same name is reported as skipped and left alone. Hooks from `hooks/hooks.json` and
 from each layer's `hooks/hooks.json` are merged into `~/.claude/settings.json`.
+Plugins declared in `plugins.json` (core or layer) are merged into the same file; see `docs/layers.md`.
 
 ### Plugin mode
 

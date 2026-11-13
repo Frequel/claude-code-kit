@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 ### Added
 
+- `plugins.json` in the core or in a layer declares marketplaces and plugins; `install.sh` merges them into
+  `settings.json` (`extraKnownMarketplaces`, `enabledPlugins`) without replacing or re-enabling anything the user
+  set. `layers/personal` declares `egm@egm` (`google/elephant-goldfish-model`). `tests/plugins.sh`: 8 cases.
+
 - The guard hook refuses `tokensave doctor|install|reinstall|upgrade` and `rtk init -g`, which rewrite the
   configuration shared with the dev containers with host-only paths. It follows `cd`, `bash -c`, `env`, `sudo`
   and `rtk` (also `rtk proxy`); the per-project forms stay allowed. 26 cases in `tests/hooks.sh`.

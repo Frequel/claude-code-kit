@@ -224,6 +224,33 @@ print(f"  hooks merged into settings.json ({added} group(s), kit referenced as {
 PY
 }
 
+merge_plugins() { # declare the plugins of the core and of each layer in settings.json, idempotently
+  python3 - "$KIT_ROOT" "$CLAUDE_DIR/settings.json" "${LAYERS[@]}" <<'PY'
+import json, sys, pathlib
+kit, settings_path = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+layers = sys.argv[3:]
+sources = [kit/'plugins.json'] + [kit/'layers'/l/'plugins.json' for l in layers]
+settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
+added_m = added_p = 0
+for src in sources:
+    if not src.exists():
+        continue
+    spec = json.loads(src.read_text())
+    for name, entry in spec.get('marketplaces', {}).items():
+        # Never replace a marketplace the user already registered under this name.
+        if name not in settings.setdefault('extraKnownMarketplaces', {}):
+            settings['extraKnownMarketplaces'][name] = entry
+            added_m += 1
+    for plugin in spec.get('plugins', []):
+        # Never flip a plugin the user has already enabled or deliberately disabled.
+        if plugin not in settings.setdefault('enabledPlugins', {}):
+            settings['enabledPlugins'][plugin] = True
+            added_p += 1
+settings_path.write_text(json.dumps(settings, indent=2) + '\n')
+print(f"  plugins declared in settings.json ({added_p} new plugin(s), {added_m} new marketplace(s))")
+PY
+}
+
 remove_hooks() {
   python3 - "$KIT_ROOT" "$(kit_ref)" "$CLAUDE_DIR/settings.json" <<'PY'
 import json, os, sys, pathlib
@@ -289,6 +316,7 @@ install)
   install_tree "$KIT_ROOT"
   for l in "${LAYERS[@]}"; do install_tree "$KIT_ROOT/layers/$l"; done
   [ "$RULES_ONLY" -eq 0 ] && merge_hooks
+  [ "$RULES_ONLY" -eq 0 ] && merge_plugins
   drop_stale_entries
   mv "$MANIFEST.new" "$MANIFEST"
   if [ "${#LAYERS[@]}" -gt 0 ]; then printf '%s\n' "${LAYERS[@]}" > "$LAYERS_FILE"; else rm -f "$LAYERS_FILE"; fi

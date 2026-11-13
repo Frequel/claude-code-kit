@@ -19,11 +19,29 @@ layers/<name>/
   skills/<skill>/SKILL.md
   hooks/hooks.json    hook groups, merged into ~/.claude/settings.json
   hooks/scripts/*.sh  the scripts those hooks run
+  plugins.json        optional: marketplaces and plugins declared in ~/.claude/settings.json
   templates/          per-repo CLAUDE.md templates, if you use them
   docs/ , README.md   anything else; the installer ignores it
 ```
 
 Every part is optional except `layer.json`.
+
+## Plugins
+
+`plugins.json` (in the core or in a layer) declares Claude Code plugins that should arrive with the kit:
+
+```json
+{
+  "marketplaces": { "egm": { "source": { "source": "github", "repo": "google/elephant-goldfish-model" } } },
+  "plugins": ["egm@egm"]
+}
+```
+
+`install.sh` merges it into `~/.claude/settings.json` as `extraKnownMarketplaces` and `enabledPlugins`;
+Claude Code installs the declared plugins from there. The merge only adds: a marketplace you registered
+under the same name is kept, and a plugin you enabled or disabled yourself is never flipped. Running it
+twice changes nothing, and `--rules-only` skips it. `--uninstall` leaves plugins in place, because the
+installer cannot tell which of them you would still want. Remove one by hand from `enabledPlugins`.
 
 ## Rules for each part
 
