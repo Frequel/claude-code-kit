@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 ### Added
 
+- `hooks/scripts/delegation-check.sh` (UserPromptSubmit): reminds the model on every real prompt to classify the
+  task and apply `rules/delegation.md`, so the split into agents never depends on the user asking. Skips slash
+  commands and short prompts; `CLAUDE_KIT_DELEGATION_CHECK=0` switches it off. 7 cases in `tests/hooks.sh`.
+
 - `plugins.json` in the core or in a layer declares marketplaces and plugins; `install.sh` merges them into
   `settings.json` (`extraKnownMarketplaces`, `enabledPlugins`) without replacing or re-enabling anything the user
   set. `layers/personal` declares the 11 plugins in use (the official marketplace plus `egm@egm`). `tests/plugins.sh`: 8 cases.

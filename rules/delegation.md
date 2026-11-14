@@ -4,6 +4,9 @@
 without asking the user first; when it does not, stay inline.** Decide by cost and speed, never by habit.
 Delegation that adds cost without adding speed is a mistake, in both directions.
 
+A `UserPromptSubmit` hook (`hooks/scripts/delegation-check.sh`) restates this check on every real prompt, so it
+does not depend on being asked or on remembering this file deep into a long session.
+
 ## Plan first when the task is not trivial
 
 "Trivial" is about size and shape, not about the domain: code and infrastructure follow the same test.

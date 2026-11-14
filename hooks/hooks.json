@@ -1,5 +1,5 @@
 {
-  "description": "Core hooks: auto-format after edits, refuse commits on protected branches, protect the Claude configuration from deletion, orient at session start.",
+  "description": "Core hooks: auto-format after edits, refuse commits on protected branches, protect the Claude configuration from deletion, orient at session start, remind the delegation check on every prompt.",
   "hooks": {
     "PostToolUse": [
       {
@@ -31,6 +31,17 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/protect-config.sh\"",
             "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/delegation-check.sh\"",
+            "timeout": 10
           }
         ]
       }

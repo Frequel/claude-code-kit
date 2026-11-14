@@ -71,7 +71,7 @@ directories: rerun the installer.
 | `skills/` | `build-check` (syntax, lint and tests after edits), `debug` (diagnose errors and failures) | Claude judges them relevant |
 | `agents/` | `staff-reviewer` (Opus, adversarial review), `rust-service-dev`, `go-service-dev`, `python-service-dev`, `test-suite-architect` (Sonnet), `gate-runner` (Haiku, returns only failures) | Delegated to |
 | `rules/` | `git.md`, `exploration.md`, `config-safety.md`, `delegation.md` always; `rust.md`, `go.md`, `python.md`, `typescript.md` when you touch matching files | Automatically |
-| `hooks/` | format after edits, command-aware branch guard, configuration protection, session orientation | Automatically |
+| `hooks/` | format after edits, command-aware branch guard, configuration protection, session orientation, delegation reminder on every prompt | Automatically |
 | `templates/` | `CLAUDE.base.md` plus one skeleton per stack (Rust, Go, Python, TypeScript, infra) | `propagate.sh` copies them |
 | `layers/` | Your specialisations; only `layers/example` is part of the kit | `install.sh --layers` |
 | `scripts/` | `backup-config.sh` | The protect hook, or by hand |
@@ -79,8 +79,13 @@ directories: rerun the installer.
 
 ## Hooks
 
-All hooks are silent on the happy path and exit 0 unless they mean to block.
+All hooks are silent on the happy path and exit 0 unless they mean to block. The one exception is
+`delegation-check`, whose output is the point.
 
+- **delegation-check** (UserPromptSubmit): injects a five-line reminder to apply `rules/delegation.md` on every
+  real prompt, so the "trivial, or plan and split into agents?" decision never depends on you asking. Skipped for
+  slash commands and prompts under 40 characters (`CLAUDE_KIT_DELEGATION_MIN_CHARS`); switch it off for a
+  session with `CLAUDE_KIT_DELEGATION_CHECK=0`.
 - **format** (PostToolUse on edits): `rustfmt`, `gofmt`, `ruff format`, `prettier`, `shfmt`, whichever
   is installed; missing tools are skipped silently.
 - **guard** (PreToolUse on Bash): refuses `git commit` and `git push` on `master`, `main` or

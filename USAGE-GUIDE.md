@@ -81,6 +81,10 @@ before writing anything.
 - **On Rust files:** `rules/rust.md`. **Go:** `rules/go.md`. **Python:** `rules/python.md`.
   **TypeScript:** `rules/typescript.md`.
 
+On every real prompt the `delegation-check` hook also reminds the model to classify the task (trivial: do it;
+not trivial: plan mode with a who-does-what table, then delegate what pays). You never have to ask for
+the split. A slash command or a very short answer skips the reminder.
+
 You do not re-read these, so a prompt can be short and specific:
 
 ```

@@ -342,6 +342,28 @@ t_guard "unlisted remote: commit on main" deny "$OTHER" "git commit -m x"
 t_guard "unlisted remote: push to main" deny "$OTHER" "git push origin main"
 t_guard "no remote at all: commit on master" deny "$MASTER" "git commit -m x"
 
+# ------------------------------------------------------------------ delegation-check (UserPromptSubmit)
+t_deleg() { # NAME EXPECT(remind|silent) PROMPT [ENV=VAL]
+  local out
+  out=$(python3 -c 'import json,sys; print(json.dumps({"prompt": sys.argv[1], "cwd": "/tmp", "session_id": "d1"}))' "$3" |
+    env ${4:-X=1} bash "$HOOKS_DIR/delegation-check.sh")
+  case "$out" in
+    *"Delegation check"*) report "delegation-check: $1" "$2" "remind" ;;
+    "") report "delegation-check: $1" "$2" "silent" ;;
+    *) report "delegation-check: $1" "$2" "unexpected" ;;
+  esac
+}
+LONGP="Add retry with backoff to the export job and cover timeouts in the tests"
+t_deleg "real prompt gets the reminder" remind "$LONGP"
+t_deleg "slash command is skipped" silent "/go finish the current work end to end and open the pull request"
+t_deleg "short answer is skipped" silent "yes, go on"
+t_deleg "empty prompt is skipped" silent ""
+t_deleg "switch off with the environment" silent "$LONGP" CLAUDE_KIT_DELEGATION_CHECK=0
+t_deleg "threshold is configurable" remind "refactor the parser" CLAUDE_KIT_DELEGATION_MIN_CHARS=5
+out=$(printf 'not json' | bash "$HOOKS_DIR/delegation-check.sh")
+rc=$?
+report "delegation-check: malformed input exits 0 silently" "silent" "$([ "$rc" -eq 0 ] && [ -z "$out" ] && echo silent || echo broken)"
+
 echo
 echo "hooks.sh: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

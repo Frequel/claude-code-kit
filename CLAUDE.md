@@ -60,7 +60,9 @@ echo '{"cwd":"/path/to/a/repo"}' | bash hooks/scripts/orient.sh
   except `layers/example`, and keep company or personal content out of the core tree: the core must
   stay generic and free of names, hosts and secrets.
 - **A hook that writes to stdout injects that text into the session.** Keep hooks silent on the
-  happy path, and never let one fail loudly: every script exits 0 unless it means to block.
+  happy path, and never let one fail loudly: every script exits 0 unless it means to block. The one
+  deliberate exception is `delegation-check.sh` (UserPromptSubmit), whose reminder is the point; keep it
+  short, since it is paid on every prompt.
 - **`guard.sh` blocks; a `Stop` hook must not.** A `Stop` hook that exits 2 keeps the conversation
   going and can loop. Stop hooks only emit `systemMessage`.
 - **guard and protect-config parse the command** through `hooks/scripts/lib/cmdparse.py`, so quotes,
