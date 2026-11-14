@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 ### Added
 
+- Layers are split by concern: the Obsidian workflow left the personal layer and became its own `vault` layer
+  (location configurable with `CLAUDE_VAULT_DIR`, silent when there is no vault, `requires` empty). The core is
+  unchanged and still knows nothing about either layer; dev containers pick layers with `DEVC_CLAUDE_KIT_LAYERS`.
+
 - `hooks/scripts/delegation-check.sh` (UserPromptSubmit): reminds the model on every real prompt to classify the
   task and apply `rules/delegation.md`, so the split into agents never depends on the user asking. Skips slash
   commands and short prompts; `CLAUDE_KIT_DELEGATION_CHECK=0` switches it off. 7 cases in `tests/hooks.sh`.
