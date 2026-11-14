@@ -133,6 +133,11 @@ skipped silently, so you never format by hand and CI never fails on formatting.
 
 ### When you commit or push
 
+By default Claude does not commit or push unless you ask for that specific change; at most it offers to stage
+the files and proposes a message. A repository can be made an exception by listing its remote in a layer's
+`guard-allow-remotes` file: there Claude commits and pushes on its own once the work is verified (force pushes
+stay refused). That one file is the whole list, and the guard hook below enforces it.
+
 The `guard` hook parses the command and looks at the repository it **actually acts on**: `cd repo &&
 git commit` and `git -C repo commit` are checked against `repo`, not against where the session
 started. It:

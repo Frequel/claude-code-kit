@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 `.claude-plugin/marketplace.json` always carry the same number.
 
 ## [Unreleased]
+### Changed
+
+- `rules/git.md` states one logic: by default Claude never commits or pushes unasked (at most it offers to stage
+  and proposes a message), and a repository is an exception only when a layer lists its remote in
+  `guard-allow-remotes`, the same file the guard hook enforces. `USAGE-GUIDE.md` explains it.
+
 ### Added
 
 - Documentation: one layer per concern (personal preferences, a note-taking workflow, a company) keeps each
